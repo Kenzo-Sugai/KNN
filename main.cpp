@@ -1,8 +1,9 @@
 #include <iostream>
 #include <math.h>
 #include <vector>
+#include "derivative.hpp"
 
-using namespace std;
+using namespace std; using namespace d;
 
 double activation_function(double S){
   return 1 / (1 + exp(-S));
@@ -21,9 +22,14 @@ int main(){
   vector<double> C2; // Array 2
 
   vector<vector<double>> W = { // Vetor para guardar os pesos
-    {0.3, 0.4, 0.5, 0.6}, // W1
-    {0.6, 0.7, 0.1, 0.1}, // W2
-    {0.4, 0.7, 0.0, 0.1}, // W3 (Sigmoid [first])
+    {0.3, 0.4, 0.5, 0.6}, // 0[w0, w1, w2, w3]
+    {0.6, 0.7, 0.1, 0.1}, // 1[w4, w5, w6, w7]
+    {0.4, 0.7, 0.0, 0.1}, // 2[w8, w9, w10, w11] (Sigmoid [first])
+    {0.1, 0.6, 0.2, 0.2}, // 3[w12, w13, w14, w15]
+    {0.0, 0.0, 0.5, 0.2}, // 4[w16, w17, w18, w19]
+    {0.2, 0.5, 0.4, 0.3}, // 5[w20, w21, w22, w23]
+    {0.3, 0.4, 0.0, 0.9}, // 6[w24, w25, w26, w27]
+    {0.1, 0.6, 0.8, 0.0}, // 7[w28, w29, w30, w31]
   };
 
   vector<vector<double>> C; 
@@ -47,44 +53,36 @@ int main(){
 
   cout << endl;
 
+  for(int i = 0; i < n1; i++){
+    C1[i] = activation_function(C1[i]);
+    // cout << S << " + " << C1[i] << " * " << W[2][i] << " = ";
+    // S += C1[i]*W[2][i];
+    // cout << S << endl;
+  }
+
+  C2.resize(n2);
+
+  for(int i = 0; i < n2; i++){
+    for(int j = 0; j < n1; j++){
+      cout << "C2 " << i << ": " << C2[i] << " + " << C1[i] << " * " << W[i][j] << " = ";
+      C2[i] += C1[j]*W[2+i][j];
+      cout << C2[i] << endl;
+    }
+  }
+
   double S = 0;
 
   for(int i = 0; i < n2; i++){
-    C2.push_back(C1[i]*W[2][i]);
-  }
-
-  for(int i = 0; i < n1; i++){
-    C1[i] = activation_function(C1[i]);
-    cout << S << " + " << C1[i] << " * " << W[2][i] << " = ";
-    S += C1[i]*W[2][i];
+    C2[i] = activation_function(C2[i]);
+    cout << S << " + " << C2[i] << " * " << W[2][i] << " = ";
+    S += C2[i]*W[6][i];
     cout << S << endl;
   }
 
   S = activation_function(S);
   printf("%.4lf\n", S);
 
-
-
-  // for(int i = 0; i < n1; i++){
-  //   for(int j = 0; j < n2; j++){
-  //     if(i == 0){
-  //       C2[j] = 0;
-  //     }
-  //     cin >> w;
-  //     W.push_back(w);
-  //     C2[j] += w*C1[i];
-  //     C2[j] = 1/(1 + exp(-C2[j]));
-  //   }
-  // }
-  // double S = 0;
-  // for(int i = 0; i < n2; i++){
-  //   cin >> w;
-  //   W.push_back(w);
-  //   S += C2[i]*w;
-  // }
-
-  // S = 1/(1 + exp(-S));
-  // cout << "S = " << S << endl;
+  return 0;
 
   // S = output
   // E = (S - target)²
