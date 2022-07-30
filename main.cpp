@@ -1,143 +1,138 @@
 #include <iostream>
-#include <vector>
-#include <math.h>
 #include <cstdlib>
+#include <cmath>
+#include <vector>
 
 using namespace std;
+
+vector<vector<double>> W;
 
 double Sigmoid(double x){
   return 1.0/(1.0 + exp(-x));
 }
 
-double dSigmoid(double x){
-  return 1.0 - Sigmoid(x);
-}
-
-vector<vector<double>> W;
-
 double randomWeight(){
   return rand() / double(RAND_MAX);
 }
 
-vector<vector<double>> Neuron;
-int w {0}, b;
-double Output {0}, Error {0}, Z [5];
+class Network{
 
-void Feedfoward(int Layers, int Neurons, vector<int> input){
-  Neuron.resize(Layers);
-  for(int i = 0; i < Layers; i++){
-    Neuron[i].resize(Neurons);
-  }
-  W.resize(Layers+1);
-  for(int layer = 0; layer < Layers+1; layer++){
-    //cout << layer << endl;
-    if(layer == 0){
-      for(int n = 0; n < Neurons; n++){
-        for(int t = 0; t < input.size(); t++){
-          W[layer].push_back(randomWeight());
-          //cout << W[layer][W[layer].size()-1] << " ";
-        }
-      }
-      //cout << endl;
-    }
-    else if(layer > 0 && layer < Layers){
-      for(int n = 0; n < Neurons; n++){
-        for(int t = 0; t < Neurons; t++){
-          W[layer].push_back(randomWeight());
-          //cout << W[layer][W[layer].size()-1] << " ";
-        }
-        //cout << endl;
-      }
-    }
-    else{
-      for(int n = 0; n < 4; n++){
-        W[layer].push_back(randomWeight());
-        //cout << W[layer][n] << " ";
-      }
-      //cout << endl;
-    }
+  public:
 
+    int layerNumber;
+    int X1 {0};
+    int X2 {0};
+    int Y {0};
+    int l_rate = 0.500;
+    double Y_hat;
+    double Error;
+    vector<vector<double>> Z;
+    vector<vector<double>> S;
+    vector<vector<double>> d;
+
+    Network(){};
+    void weight_Initialize();
+    void print_Weights();
+    void feedFoward();
+    void print_Output();
+    void backPropagation();
+};
+
+void Network::weight_Initialize(){
+  int layer = layerNumber - 1;
+  W.resize(layerNumber+1);
+
+  for(int i = 0; i < 8; i++){
+    W[0].push_back(randomWeight());
   }
-  for(int i = 0; i <= Layers+1; i++){
-    if(i == 0){ // Input Layer
-      w = 0;
-      for(int j = 0; j < Neurons; j++){
-        for(int k = 0; k < input.size(); k++, w++){
-          Neuron[i][j] = input[k] * W[i][w];
-          Z[i] += Neuron[i][j];
-          //cout << "N[" << i << "][" << j << "] = " << input[k] << " * " << W[i][w] << " = " << Neuron[i][j] << endl;
-        }
-        Neuron[i][j] = Sigmoid(Neuron[i][j]);
-      }
+
+  for(int i = 1; i <= layer; i++){
+    for(int j = 0; j < 16; j++){
+      W[i].push_back(randomWeight());
     }
-    if(i > 0 && i < Layers){ // Hidden Layer
-      w = 0;
-      for(int j = 0; j < Neurons; j++){
-        for(int k = 0; k < Neurons; k++, w++){
-          Neuron[i][j] = Neuron[i-1][k] * W[i][w];
-          Z[i] += Neuron[i][j];
-          //cout << "N[" << i << "][" << j << "] = " << Neuron[i-1][k] << " * " << W[i][w] << endl;
-        }
-        Neuron[i][j] = Sigmoid(Neuron[i][j]);
-      }
-    }
-    if(i == Layers){ // Output Layer
-      for(int j = 0; j < Neurons; j++){
-        Z[i] += Neuron[i-1][j]*W[i][j];
-        //cout << "Z5 = " << Neuron[i-1][j] << " * " << W[i][j] << endl;
-        //cout << Z[i] << endl;
-      }
-      Output = Sigmoid(Z[i]);
-    }
+  }
+
+  for(int i = 0; i < 4; i++){
+    W[layer+1].push_back(randomWeight());
   }
 }
 
-void Backpropagation(double target, vector<int> &input){
-  w = 0;
-  Error = (target - Output);
-  cout << "ERROR: " << std::abs(Error) << endl;
-  double d4 = Error*dSigmoid(Z[3])*Output;
-  double d3 = d4*dSigmoid(Z[2]);
-  double d2 = d3*dSigmoid(Z[1]);
-  double d1 = d2*dSigmoid(Z[0]);
-  double d[4] = {d4, d3, d2, d1};
+void Network::print_Weights(){
+  for(int i = 0; i < W.size(); i++){
+    for(int j = 0; j < W[i].size(); j++){
+      cout << W[i][j] << " ";
+    }
+    cout << endl;
+  }
+}
 
-  for(int i = 3; i >= 0; i--){
-    //cout << W[3][i] << " -> ";
-    W[3][i] -= d[0]*Neuron[2][i];
-    //cout << W[3][i] << endl;
+void Network::feedFoward(){
+
+  Z.resize(layerNumber+1);
+  S.resize(layerNumber+1);
+  d.resize(layerNumber+1);
+
+  for(int i = 0; i < 8; i += 2){
+    Z[0].push_back(X1 * W[0][i + 0] + X2 * W[0][i + 1]);
+    S[0].push_back(Sigmoid(Z[0].back()));
   }
 
-  for(int i = 0; i <= 1; i++){
-    w = W[2-i].size()-1;
-    for(int j = 0; j < W[2-i].size(); j++, w--){
-      //cout << W[2-i][w] << " -> ";
-      W[2-i][w] -= d[1+i]*W[2-i][w];
-      //cout << W[2-i][w] << endl;
+  for(int i = 1; i <= layerNumber - 1; i++){
+    for(int j = 0; j < 16; j += 4){
+      Z[i].push_back(
+        S[i - 1][0] * W[i][j + 0] + S[i - 1][1] * W[i][j + 1] + S[i - 1][2] * W[i][j + 2] + S[i - 1][3] * W[i][j + 3]
+        );
+      S[i].push_back(Sigmoid(Z[i].back()));
     }
   }
-  w = W[0].size() - 1;
-  for(int i = 0; i < W[0].size()/2; i++){
-    for(int j = 0; j <= 1; j++, w--){
-      //cout << W[0][w] << " -> ";
-      W[0][w] -= d[3]*input[j];
-      //cout << W[0][w] << endl;
+
+  Z[layerNumber].push_back(
+    S[layerNumber - 1][0] * W[layerNumber][0] +
+    S[layerNumber - 1][1] * W[layerNumber][1] + 
+    S[layerNumber - 1][2] * W[layerNumber][2] +
+    S[layerNumber - 1][3] * W[layerNumber][3]);
+
+  Network::Y_hat = Sigmoid(Z[layerNumber][0]);
+  Network::Error = (1.0/2.0) * pow(Network::Y_hat - Network::Y, 2);
+  
+}
+
+void Network::print_Output(){
+  cout << "OUTPUT: " << Network::Y_hat << endl;
+  cout << "ERROR: " << Network::Error << endl;
+}
+
+void Network::backPropagation(){
+  
+  for(int i = 0; i < 4; i++){
+    W[layerNumber][i] -= l_rate * S[layerNumber - 1][i] * Y_hat * (1 - Y_hat) * (Y_hat - Y);
+  }
+
+  d[0].push_back(Y_hat * (1 - Y_hat) * (Y_hat * Y));
+
+  for(int i = 1; i <= 1; i++){
+    for(int j = 0; j < 16; j++){
+      W[layerNumber - i][j] -= l_rate * S[layerNumber - i - 1][j % 4] * S[i][i / 4] * (1 - S[i][i / 4]) * W[layerNumber - i + 1][i / 4] * d[0][0];
+      d[1].push_back(S[i][i / 4] * (1 - S[i][i / 4]) * W[layerNumber - i + 1][i / 4] * d[0][0]);
     }
+  }
+
+  for(int i = 0, j = 0; i < 8; i += 2, j++){
+    W[0][i] -= X1 * S[0][0] * (1 - S[0][0]) * W[1][j + 0] * W[1][j + 4] * W[1][j + 8] * W[1][j + 12] * d[1][i];
+    W[0][i + 1] -= X2 * S[0][0] * (1 - S[0][0]) * W[1][j + 0] * W[1][j + 4] * W[1][j + 8] * W[1][j + 12] * d[1][i];
   }
 }
 
 int main(){
-  int n, l, t, value, T = 1;
 
-  vector<vector<int>> X {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
-  vector<double> Y {0, 1, 1, 0};
-  int layerNumber = 3;
-  int NeuronlayerNumber = 4;
-  for(int i = 0; i < X.size(); i++){
-    Feedfoward(layerNumber, NeuronlayerNumber, X[i]);
+  // INICIALIZAÇÃO DA CLASSE NETWORK
+  Network net;
+  net.layerNumber = 2;
 
-    cout << Output << endl;
-    
-    Backpropagation(Y[i], X[i]);
-  }
+  // INICIALIZAÇÃO DOS PESOS
+  net.weight_Initialize();
+  //net.print_Weights();
+  net.feedFoward();
+  net.backPropagation();
+  net.print_Output();
 }
