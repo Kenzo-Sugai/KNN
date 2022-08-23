@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <sstream>
-#include <string>
 #include <random>
 #include <Eigen/Dense>
 #include <chrono>
@@ -20,7 +19,7 @@ class CsvReader {
 
     CsvReader(const string name);
     void csvPrint();
-    void shuffle();
+    void shuffle_matrix();
 
 };
 
@@ -44,36 +43,40 @@ CsvReader::CsvReader(const string csvname){
     }
   } else cout<<"Could not open the file\n";
   this->parse.resize(content.size());
-  for(int i=1;i<content.size();i++){
+  for(int i=0;i<content.size();i++){
     for(int j=1;j<content[i].size();j++){ 
       double num = stod(content[i][j]);
-      this->parse[i - 1].push_back(num);
+      this->parse[i].push_back(num);
     }
   }
 
-  CsvReader::shuffle();
+  CsvReader::shuffle_matrix();
 }
 
-void CsvReader::shuffle(){
-  MatrixXd matriz(this->parse.size(), this->parse[0].size());
+void CsvReader::shuffle_matrix(){
+  MatrixXd matriz(this->parse.size(), this->parse[1].size());
+  cout << parse.size() << " " << parse[0].size() <<endl;
   for(int i = 0; i < matriz.rows(); i++){
     for(int j = 0; j < matriz.cols(); j++){
       matriz(i, j) = this->parse[i][j];
     }
   }
 
-  std::cout << "A" << std::endl;
+  matriz.transposeInPlace();
+
+  unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+  for(auto row: matriz.rowwise()){
+
+    shuffle(row.begin(), row.end(), default_random_engine(seed));
+
+  }
 
   matriz.transposeInPlace();
 
-  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-  for(auto row: matriz.rowwise()){
-
-    shuffle(row.begin(), row.end(), std::default_random_engine(seed));
-
-    matriz.transposeInPlace();
-
-    std::cout << matriz << std::endl;
+  for(int i = 0; i < matriz.rows(); i++){
+    for(int j = 0; j < matriz.cols(); j++){
+      this->parse[i][j] = matriz(i, j);
+    }
   }
 }
 
