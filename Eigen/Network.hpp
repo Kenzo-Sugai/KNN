@@ -15,6 +15,14 @@ double Derivative_Sigmoid(double x){
   return Sigmoid(x) * (1 - Sigmoid(x)); 
 }
 
+double Identity(double x){
+  return x;
+}
+
+double Derivative_Identity(double x){
+  return 1;
+}
+
 MatrixXd activationFunction(const MatrixXd &input, double (*func)(double x)){
   MatrixXd activationMatrix(input.rows(), input.cols()); // criar nova matriz identica a matriz de input
 
@@ -42,7 +50,8 @@ class Network {
   MatrixXd feedFoward(const MatrixXd &input);
   void backPropagation(const MatrixXd &output, const MatrixXd &target, double l_rate);
   MatrixXd multiplicationMatrix(const MatrixXd &A_Matrix, const MatrixXd &B_Matrix);
-  void showError(const MatrixXd &output, const MatrixXd &target);
+  MatrixXd showError(const MatrixXd &output, const MatrixXd &target);
+  double error(const MatrixXd);
 };
 
 Network::Network(const std::vector<unsigned int> &layers){
@@ -74,9 +83,9 @@ MatrixXd Network::multiplicationMatrix(const MatrixXd &A_Matrix, const MatrixXd 
   return New_Matrix;
 }
 
-void Network::showError(const MatrixXd &output, const MatrixXd &target){
-  std::cout << std::fixed;
-  std::cout << std::setprecision(2) << (1.0/2.0) * Network::multiplicationMatrix((output - target), (output - target)) * 100 << std::fixed << "%" <<std::endl;
+MatrixXd Network::showError(const MatrixXd &output, const MatrixXd &target){
+
+  return (1.0/3.0) * ((output - target).transpose() * (output - target)) * 100;
 }
 
 void Network::randomInitialize(MatrixXd &Matrix){
@@ -100,11 +109,15 @@ MatrixXd Network::feedFoward(const MatrixXd &Input){
   return this->Input[this->layers.size() - 1];
 }
 
-void Network::backPropagation(const MatrixXd &output, const MatrixXd &target, double l_rate){
+void Network::backPropagation(const MatrixXd &output, 
+                              const MatrixXd &target, 
+                              double l_rate){
 
   std::vector<MatrixXd> Delta(this->layers.size()); // size Delta
 
-  Delta[this->layers.size() - 1] = activationFunction(this->Z[this->layers.size() - 1], Derivative_Sigmoid) * (output - target); // Delta da ultima layer
+  Delta[this->layers.size() - 1] = 
+  multiplicationMatrix(activationFunction(this->Z[this->layers.size() - 1], Derivative_Sigmoid),  
+                                                      (output - target)); // Delta da ultima layer
 
   for(unsigned int layer = layers.size() - 2; layer > 0; layer--){
 
