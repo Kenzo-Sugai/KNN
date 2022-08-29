@@ -41,15 +41,14 @@ CsvReader::CsvReader(const string csvname){
       row.push_back(word);
       content.push_back(row);
     }
-  } else cout<<"Could not open the file\n";
+  } else cout << "Arquivo não pode ser aberto" << endl;
   this->parse.resize(content.size());
-  for(int i=0;i<content.size();i++){
-    for(int j=1;j<content[i].size();j++){ 
+  for(int i = 0; i < content.size(); i++){
+    for(int j = 0; j < content[i].size(); j++){ 
       double num = stod(content[i][j]);
       this->parse[i].push_back(num);
     }
   }
-
   CsvReader::shuffle_matrix();
 }
 
