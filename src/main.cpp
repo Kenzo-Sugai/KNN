@@ -28,21 +28,21 @@ void setValue(const int i, MatrixXd &temp, string type){
 int main(){
   ofstream myfile;
   myfile.open("output.txt");
-  std::vector<unsigned int> N {4, 8, 16, 32, 32, 3};
+  std::vector<unsigned int> N {4, 8, 16, 16, 32, 3};
   MatrixXd Output;
-  double l_rate = 0.500;
+  double l_rate = 0.900;
   unsigned int epoch,Epochs = 150;
   double error;
 
-  Network net(N);
+  Network net(N,Sigmoid,Derivative_Sigmoid);
+  //net.setFunction(0,ReLU,Derivative_ReLU);
 
   for(epoch = 0; epoch < Epochs; epoch++){
-  error = 0;
+    error = 0;
     for(int i = 0; i < 150; i++){
-
       setValue(i, Input, "input");
       setValue(i, Target, "target");
-      
+
       Output = net.feedFoward(Input);
       error += net.showError(Output, Target)(0, 0);
       net.backPropagation(Output, Target, l_rate);
