@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <iomanip>
+#include <algorithm>
 #include <Eigen/Dense>
 
 using namespace Eigen;
@@ -23,6 +24,36 @@ double Derivative_Identity(double x){
   return 1;
 }
 
+
+double Tanh(double x){
+   return tanh(x);
+} 
+
+double Derivative_Tanh(double x){
+  double z=tanh(x);
+   return 1.0-z*z;
+} 
+
+
+double ReLU(double x){
+  if(x >= 0) return x; return 0;
+} 
+
+
+double Derivative_ReLU(double x){
+  if(x >= 0) return 1; return 0;
+}
+
+
+
+double LReLU(double x){
+  if(x >= 0) return x; return 0.01*x;
+} 
+
+double Derivative_LReLU(double x){
+  if(x >= 0) return 1; return 0.01;
+}
+
 MatrixXd activationFunction(const MatrixXd &input, double (*func)(double x)){
   MatrixXd activationMatrix(input.rows(), input.cols()); // criar nova matriz identica a matriz de input
 
@@ -36,25 +67,32 @@ MatrixXd activationFunction(const MatrixXd &input, double (*func)(double x)){
   return activationMatrix;
 }
 
+typedef double (*FuncPointer)(double) ;
+
 class Network {
   
   public:
 
-  std::vector<unsigned int> layers; // tamanho de cada layer
-  std::vector<MatrixXd> Weight; // Matriz de pesos
-  std::vector<MatrixXd> Z; // Matriz peso * input
-  std::vector<MatrixXd> Input; // Matriz de inputs
+  std::vector<unsigned int> layers;     // tamanho de cada layer
+  std::vector<MatrixXd> Weight;         // Matriz de pesos
+  std::vector<MatrixXd> Z;              // Matriz peso * input
+  std::vector<MatrixXd> Input;          // Matriz de inputs
+  std::vector<MatrixXd> Bias;           // Matriz de bias
+  std::vector<FuncPointer> Func;
+  std::vector<FuncPointer> d_Func;
+  
     
-  Network(const std::vector<unsigned int> &layers);
+  Network(const std::vector<unsigned int> &layers, FuncPointer func, FuncPointer Dfunc);
   void randomInitialize(MatrixXd &Matrix);
   MatrixXd feedFoward(const MatrixXd &input);
   void backPropagation(const MatrixXd &output, const MatrixXd &target, double l_rate);
   MatrixXd multiplicationMatrix(const MatrixXd &A_Matrix, const MatrixXd &B_Matrix);
   MatrixXd showError(const MatrixXd &output, const MatrixXd &target);
   double error(const MatrixXd);
+  void setFunction(int idx, FuncPointer func, FuncPointer Dfunc);
 };
 
-Network::Network(const std::vector<unsigned int> &layers){
+Network::Network(const std::vector<unsigned int> &layers, FuncPointer func, FuncPointer Dfunc){
   this->layers = layers;
 
   this->Input = std::vector<MatrixXd>(layers.size());
@@ -63,11 +101,15 @@ Network::Network(const std::vector<unsigned int> &layers){
   // percorrer cada layer do vetor de layers
   for(unsigned int layer = 1; layer < layers.size(); layer++){
     
-    MatrixXd w(layers[layer], layers[layer - 1]); // criar matriz com 
-    Network::randomInitialize(w); // preenchimento da matriz com pesos aleatórios
-    Weight.push_back(w); // preenchimento do vetor peso com matrizes
+    MatrixXd b(layers[layer], 1);                  // criar matriz de bias
+    MatrixXd w(layers[layer], layers[layer - 1]);  // criar matriz de pesos 
+    Network::randomInitialize(b);                  // preenchimento da matriz com bias aleatórios
+    Network::randomInitialize(w);                  // preenchimento da matriz com pesos aleatórios
+    Bias.push_back(b);                             // preenchimento do vetor bias com matrizes
+    Weight.push_back(w);                           // preenchimento do vetor peso com matrizes
+    Func.push_back(func);                          // preenchimento do vetor peso com matrizes
+    d_Func.push_back(Dfunc);                       // preenchimento do vetor peso com matrizes
 
-    std::cout << Weight.back() << std::endl << std::endl;
   }
 }
 
@@ -96,17 +138,27 @@ void Network::randomInitialize(MatrixXd &Matrix){
   }
 }
 
-MatrixXd Network::feedFoward(const MatrixXd &Input){
-  this->Input[0] = Input;
-
+MatrixXd Network::feedFoward(const MatrixXd &In){
+  this->Input[0] = In;
   for(unsigned int layer = 1; layer < this->layers.size(); layer++){
-    
-    Z[layer] = this->Weight[layer - 1] * this->Input[layer - 1];
-    this->Input[layer] = activationFunction(this->Z[layer], Sigmoid);
-  
+    //this->Input[layer] = this->Bias[layer - 1];
+    Z[layer] = this->Weight[layer - 1] * this->Input[layer - 1]+this->Bias[layer - 1];
+    this->Input[layer] = activationFunction(this->Z[layer], this->Func[layer-1]);
+    /*
+    if(layer == layers.size() - 1){
+      this->Input[layer] = activationFunction(this->Z[layer], Sigmoid);
+    }
+    else{
+      this->Input[layer] = activationFunction(this->Z[layer], ReLU);
+    }
+    */
   }
-
   return this->Input[this->layers.size() - 1];
+}
+
+void Network::setFunction(int idx, FuncPointer func, FuncPointer Dfunc){
+  this->Func[idx] = func;
+  this->d_Func[idx] = Dfunc;
 }
 
 void Network::backPropagation(const MatrixXd &output, 
@@ -115,19 +167,23 @@ void Network::backPropagation(const MatrixXd &output,
 
   std::vector<MatrixXd> Delta(this->layers.size()); // size Delta
 
-  Delta[this->layers.size() - 1] = 
-  multiplicationMatrix(activationFunction(this->Z[this->layers.size() - 1], Derivative_Sigmoid),  
-                                                      (output - target)); // Delta da ultima layer
-
+  MatrixXd F=activationFunction(this->Z[this->layers.size() - 1], this->d_Func[this->layers.size()-2]);
+  Delta[this->layers.size() - 1]  =  multiplicationMatrix(F,output - target); // Delta da ultima layer
   for(unsigned int layer = layers.size() - 2; layer > 0; layer--){
-
-    Delta[layer] = multiplicationMatrix(activationFunction(this->Z[layer], Derivative_Sigmoid), this->Weight[layer].transpose() * Delta[layer + 1]);
-  
+    F=activationFunction(this->Z[layer], this->d_Func[layer-1]);
+    Delta[layer] = multiplicationMatrix(F, this->Weight[layer].transpose() * Delta[layer + 1]);
   }
-
+  
   for(unsigned int layer = 0; layer < layers.size() - 1; layer++){
 
-    this->Weight[layer] -= l_rate * Delta[layer + 1] * this->Input[layer].transpose();
+    this->Weight[layer] -= (l_rate/(double)layers[layers.size() - 1]) * Delta[layer + 1] * this->Input[layer].transpose();
 
   }
+ 
+  for(unsigned int layer = 0; layer < layers.size() - 1; layer++){
+
+    this->Bias[layer] -= (l_rate/(double)layers[layers.size() - 1]) * Delta[layer + 1];
+
+  }
+  
 }
