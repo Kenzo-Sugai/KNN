@@ -27,25 +27,36 @@ void setValue(const int i, MatrixXd &temp, string type){
 
 int main(){
   ofstream myfile;
-  myfile.open("output.txt");
+  myfile.open("error.txt");
   std::vector<unsigned int> N {4, 8, 16, 16, 32, 3};
   MatrixXd Output;
   double l_rate = 0.900;
   unsigned int epoch,Epochs = 150;
   double error;
+  int turn, cnt, data;
 
   Network net(N,Sigmoid,Derivative_Sigmoid);
   //net.setFunction(0,ReLU,Derivative_ReLU);
 
   for(epoch = 0; epoch < Epochs; epoch++){
     error = 0;
+    cnt = 0;
+
     for(int i = 0; i < 150; i++){
+      data = i % 30;
+      turn = cnt % 5;
       setValue(i, Input, "input");
       setValue(i, Target, "target");
-
+      
       Output = net.feedFoward(Input);
+
+      //cout << turn << " ";
+      //net.showOutput(Output);
+
       error += net.showError(Output, Target)(0, 0);
       net.backPropagation(Output, Target, l_rate);
+      if(i > 0 && data == 29) cnt++;
+      
     }
     error /= 150.0;
     std::cout << "EPOCH: " << epoch+1 << " ERROR: " << error << std::endl;
