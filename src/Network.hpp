@@ -78,8 +78,10 @@ class Network {
   std::vector<MatrixXd> Z;              // Matriz peso * input
   std::vector<MatrixXd> Input;          // Matriz de inputs
   std::vector<MatrixXd> Bias;           // Matriz de bias
-  std::vector<FuncPointer> Func;
-  std::vector<FuncPointer> d_Func;
+  std::vector<MatrixXd> pointModel;     // Vetor de Matriz de outputs Model
+  std::vector<MatrixXd> Output;         // Vetor de Matriz de outputs
+  std::vector<FuncPointer> Func;        // Vetor de Funções de Ativação
+  std::vector<FuncPointer> d_Func;      // Vetor da Derivada de Funções de Ativação
   
     
   Network(const std::vector<unsigned int> &layers, FuncPointer func, FuncPointer Dfunc);
@@ -88,8 +90,10 @@ class Network {
   void backPropagation(const MatrixXd &output, const MatrixXd &target, double l_rate);
   MatrixXd multiplicationMatrix(const MatrixXd &A_Matrix, const MatrixXd &B_Matrix);
   MatrixXd showError(const MatrixXd &output, const MatrixXd &target);
+  void showOutput(const MatrixXd &output);
   double error(const MatrixXd);
   void setFunction(int idx, FuncPointer func, FuncPointer Dfunc);
+  void checkSavePoints();
 };
 
 Network::Network(const std::vector<unsigned int> &layers, FuncPointer func, FuncPointer Dfunc){
@@ -130,6 +134,18 @@ MatrixXd Network::showError(const MatrixXd &output, const MatrixXd &target){
   return (1.0/3.0) * ((output - target).transpose() * (output - target)) * 100;
 }
 
+void Network::showOutput(const MatrixXd &output){
+
+  for(int i = 0; i < output.rows(); i++){
+
+    for(int j = 0; j < output.cols(); j++){
+
+      std::cout << output(i, j) << " ";
+    }
+  }
+  std::cout << std::endl;
+}
+
 void Network::randomInitialize(MatrixXd &Matrix){
   for(int line = 0; line < Matrix.rows(); line++){
     for(int column = 0; column < Matrix.cols(); column++){
@@ -141,17 +157,8 @@ void Network::randomInitialize(MatrixXd &Matrix){
 MatrixXd Network::feedFoward(const MatrixXd &In){
   this->Input[0] = In;
   for(unsigned int layer = 1; layer < this->layers.size(); layer++){
-    //this->Input[layer] = this->Bias[layer - 1];
     Z[layer] = this->Weight[layer - 1] * this->Input[layer - 1]+this->Bias[layer - 1];
     this->Input[layer] = activationFunction(this->Z[layer], this->Func[layer-1]);
-    /*
-    if(layer == layers.size() - 1){
-      this->Input[layer] = activationFunction(this->Z[layer], Sigmoid);
-    }
-    else{
-      this->Input[layer] = activationFunction(this->Z[layer], ReLU);
-    }
-    */
   }
   return this->Input[this->layers.size() - 1];
 }
@@ -185,5 +192,9 @@ void Network::backPropagation(const MatrixXd &output,
     this->Bias[layer] -= (l_rate/(double)layers[layers.size() - 1]) * Delta[layer + 1];
 
   }
+  
+}
+
+void Network::checkSavePoints(){
   
 }
