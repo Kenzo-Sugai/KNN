@@ -8,6 +8,8 @@ I used KNN to run a dataset named Iris. Upon running the neural network, KNN log
 
 <img src="errorlog.gif" width="250" height="250">
 
+<img src="https://imgur.com/a/FG8rC97" width="250" height="250">
+
 ## How to run 💻
 
 1. Download repository or getclone in your directory.
