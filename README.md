@@ -4,7 +4,7 @@
 
 I made this neural network using C++ vanilla. The only external library used is Eigen, which is a linear algebra library.
 
-I used KNN to run a dataset named Iris. This dataset shows some information about flowers in general. If you run the neural network, KNN shows a log with 1% to 2% of the flower's prediction error.
+I used KNN to run a dataset named Iris. Upon running the neural network, KNN logs a final prediction error ranging from 1% to 2% for the flowers.
 
 <img src="errorlog.gif" width="250" height="250">
 
