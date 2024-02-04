@@ -7,8 +7,7 @@ I made this neural network using C++ vanilla. The only external library used is 
 I used KNN to run a dataset named Iris. Upon running the neural network, KNN logs a final prediction error ranging from 1% to 2% for the flowers.
 
 <img src="errorlog.gif" width="250" height="250">
-
-<img src="https://imgur.com/a/FG8rC97" width="250" height="250">
+([https://imgur.com/a/FG8rC97)
 
 ## How to run 💻
 
